@@ -1,0 +1,7 @@
+{{define "title"}}Error{{end}}
+
+{{define "main"}}
+<h2>{{.Error.Title}}</h2>
+<p>{{.Error.Content}}</p>
+<!-- TODO: status code as input and render differently depending on code -->
+{{end}}
