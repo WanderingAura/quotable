@@ -3,24 +3,53 @@ package main
 import (
 	"fmt"
 	"net/http"
-	"runtime/debug"
 )
 
+func (app *application) logError(r *http.Request, err error) {
+	app.errorLog.Printf("error: %s, request method: %s, request_url: %s\n", err.Error(), r.Method, r.URL.String())
+}
+
+func (app *application) errorResponse(w http.ResponseWriter, r *http.Request, status int, message interface{}) {
+	env := envelope{"error": message}
+
+	err := app.writeJSON(w, env, status, nil)
+	if err != nil {
+		app.logError(r, err)
+		w.WriteHeader(http.StatusInternalServerError)
+	}
+}
+
 func (app *application) serverErrorResponse(w http.ResponseWriter, r *http.Request, err error) {
-	trace := fmt.Sprintf("%s\n%s", err.Error(), debug.Stack())
-	app.errorLog.Output(2, trace)
-	// TODO: create an errors page and use it here
-	http.Error(w, err.Error(), http.StatusInternalServerError)
+	app.logError(r, err)
+
+	message := "the server encountered a problem and could not process your request"
+	app.errorResponse(w, r, http.StatusInternalServerError, message)
+}
+
+func (app *application) badRequestResponse(w http.ResponseWriter, r *http.Request, err error) {
+	app.errorResponse(w, r, http.StatusBadRequest, err.Error())
 }
 
 func (app *application) notFoundResponse(w http.ResponseWriter, r *http.Request) {
-	data := app.newTemplateData()
-	data.ErrorTitle = "404 page not found"
-	data.ErrorContent = "Please try searching for the page below"
-	// TODO: render the error.html template with the data
+	message := "the requested resource could not be found"
+	app.errorResponse(w, r, http.StatusNotFound, message)
 }
 
-func (app *application) MethodNotAllowedResponse(w http.ResponseWriter, r *http.Request) {
-	err := fmt.Errorf("Method not allowed")
-	app.serverErrorResponse(w, r, err)
+func (app *application) methodNotAllowedResponse(w http.ResponseWriter, r *http.Request) {
+	message := fmt.Sprintf("the %s method is not supported for this resource", r.Method)
+	app.errorResponse(w, r, http.StatusMethodNotAllowed, message)
+}
+
+func (app *application) failedValidationResponse(w http.ResponseWriter, r *http.Request, errors map[string]string) {
+	app.errorResponse(w, r, http.StatusUnprocessableEntity, errors)
+}
+
+func (app *application) editConflictResponse(w http.ResponseWriter, r *http.Request) {
+	message := "unable to update the record due to an edit conflict, please try again"
+	app.errorResponse(w, r, http.StatusUnprocessableEntity, message)
+}
+
+func (app *application) rateLimitExceededResponse(w http.ResponseWriter, r *http.Request) {
+	message := "rate limit exceeded"
+	app.errorResponse(w, r, http.StatusTooManyRequests, message)
 }
