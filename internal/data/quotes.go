@@ -1,4 +1,4 @@
-package models
+package data
 
 import (
 	"context"
@@ -6,6 +6,7 @@ import (
 	"errors"
 	"time"
 
+	"github.com/WanderingAura/quotable/internal/validator"
 	"github.com/lib/pq"
 )
 
@@ -14,8 +15,8 @@ type Quote struct {
 	LastModified time.Time `json:"last_modified"`
 	UserID       int64     `json:"user_id"`
 	Content      string    `json:"content"`
-	Author       string    `json:"author,omitempty"`
-	Source       Source    `json:"source"`
+	Author       string    `json:"author"`
+	Source       Source    `json:"source,omitempty"`
 	Tags         []string  `json:"tags"`
 	Version      int       `json:"version"`
 }
@@ -35,6 +36,23 @@ type QuoteModel interface {
 
 type QuoteDatabaseModel struct {
 	DB *sql.DB
+}
+
+func (s *Source) isPartial() bool {
+	return (s.Title == "" || s.Type == "") && !(s.Title == "" && s.Type == "")
+}
+
+func ValidateQuote(v *validator.Validator, quote *Quote) {
+	v.Check(quote.Author != "", "author", "author must be provided")
+	v.Check(len(quote.Author) <= 100, "author", "author must be less than 100 bytes")
+
+	v.Check(!quote.Source.isPartial(), "source", "either provide both source title and type or provide neither")
+
+	v.Check(quote.Tags != nil, "tags", "must be provided")
+	v.Check(len(quote.Tags) >= 1, "tags", "must contain at least one tag")
+	v.Check(len(quote.Tags) <= 5, "tags", "must not contain more than 5 tags")
+
+	v.Check(validator.Unique(quote.Tags), "tags", "must not contain duplicate values")
 }
 
 func (m *QuoteDatabaseModel) Insert(quote *Quote) error {

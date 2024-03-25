@@ -11,15 +11,15 @@ import (
 	"sync"
 	"time"
 
+	"github.com/WanderingAura/quotable/internal/data"
 	"github.com/WanderingAura/quotable/internal/mailer"
-	"github.com/WanderingAura/quotable/internal/models"
 )
 
 type application struct {
 	config   config
 	infoLog  *log.Logger
 	errorLog *log.Logger
-	models   models.Models
+	models   data.Models
 	mailer   mailer.Mailer
 	wg       sync.WaitGroup
 }
@@ -55,7 +55,7 @@ func main() {
 	flag.IntVar(&config.port, "port", 4000, "API server port")
 	flag.StringVar(&config.env, "env", "development", "Environment (development|staging|production)")
 	flag.BoolVar(&config.debug, "debug", false, "debug mode")
-	flag.StringVar(&config.logPath, "log-path", "/apps/quotable/api/logs", "File to write error logs in (absolute path)")
+	flag.StringVar(&config.logPath, "log-path", "/logs/quotable/api/quotable.log", "File to write error logs in (absolute path)")
 	flag.StringVar(&config.db.dsn, "dsn", "", "Postgres database source name")
 	flag.IntVar(&config.db.maxOpenConnections, "db-max-open-conns", 25, "Postgres max open connections")
 	flag.IntVar(&config.db.maxIdleConnections, "db-max-idle-conns", 25, "Postgres max idle connections")
@@ -82,7 +82,7 @@ func main() {
 		config:   config,
 		errorLog: errorLog,
 		infoLog:  infoLog,
-		models:   models.New(db),
+		models:   data.New(db),
 	}
 
 	srv := http.Server{
