@@ -12,11 +12,11 @@ func (app *application) routes() http.Handler {
 	router.NotFound = http.HandlerFunc(app.notFoundResponse)
 	router.MethodNotAllowed = http.HandlerFunc(app.methodNotAllowedResponse)
 
-	router.HandlerFunc(http.MethodGet, "/quotes", app.listQuoteHandler)
-	router.HandlerFunc(http.MethodGet, "/login", app.userLoginHandler)
-	router.HandlerFunc(http.MethodPost, "/login", app.userLoginPostHandler)
-	router.HandlerFunc(http.MethodGet, "/quotes/:id", app.quoteHandler)
-	router.HandlerFunc(http.MethodGet, "/users/:user_id/quotes/:quote_id", app.userQuoteHandler)
+	router.HandlerFunc(http.MethodGet, "/quotes", app.listQuotesHandler)
+	router.HandlerFunc(http.MethodGet, "/tokens/auth", app.createAuthenticationTokenHandler)
+	router.HandlerFunc(http.MethodPost, "/user/register", app.registerUserHandler)
+	router.HandlerFunc(http.MethodGet, "/quotes/:id", app.getQuoteHandler)
+	router.HandlerFunc(http.MethodGet, "/users/:user_id/quotes", app.listUserQuotesHandler)
 
 	return router
 }

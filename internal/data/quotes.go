@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"errors"
+	"fmt"
 	"time"
 
 	"github.com/WanderingAura/quotable/internal/validator"
@@ -12,6 +13,7 @@ import (
 
 type Quote struct {
 	ID           int64     `json:"id"`
+	CreatedAt    time.Time `json:"created_at"`
 	LastModified time.Time `json:"last_modified"`
 	UserID       int64     `json:"user_id"`
 	Content      string    `json:"content"`
@@ -96,4 +98,62 @@ func (m *QuoteDatabaseModel) Update(quote *Quote) error {
 		}
 	}
 	return nil
+}
+
+func (m *QuoteDatabaseModel) GetAll(content string, tags []string, filters Filters) ([]*Quote, Metadata, error) {
+
+	// if title or genre is empty then the WHERE conditions default to true
+	query := fmt.Sprintf(`
+		SELECT count(*) OVER(), id, created_at, last_modified, user_id, content, author, source_title, source_type, tags, version
+		FROM quotes
+		WHERE (to_tsvector('english', title) @@ plainto_tsquery('english', $1) OR $1 = '')
+		AND (genres @> $2 OR $2 = '{}')
+		ORDER BY %s %s, id ASC
+		LIMIT $3 OFFSET $4`, filters.sortColumn(), filters.sortDirection())
+
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+
+	args := []interface{}{content, pq.Array(tags), filters.limit(), filters.offset()}
+
+	rows, err := m.DB.QueryContext(ctx, query, args...)
+	if err != nil {
+		return nil, Metadata{}, err
+	}
+
+	defer rows.Close()
+
+	quotes := []*Quote{}
+
+	var totalRecords int
+
+	for rows.Next() {
+		var quote Quote
+		err := rows.Scan(
+			&totalRecords,
+			&quote.ID,
+			&quote.CreatedAt,
+			&quote.LastModified,
+			&quote.UserID,
+			&quote.Content,
+			&quote.Author,
+			&quote.Source.Title,
+			&quote.Source.Type,
+			pq.Array(&quote.Tags),
+			&quote.Version,
+		)
+		if err != nil {
+			return nil, Metadata{}, err
+		}
+
+		quotes = append(quotes, &quote)
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, Metadata{}, err
+	}
+
+	metadata := calculateMetadata(totalRecords, filters.Page, filters.PageSize)
+
+	return quotes, metadata, nil
 }

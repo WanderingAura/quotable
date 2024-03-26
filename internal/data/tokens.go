@@ -14,6 +14,7 @@ import (
 const (
 	// this scope designates that the token is used for activation of a user account
 	ScopeActivation = "activation"
+	ScopeAuth       = "auth"
 )
 
 type Token struct {

@@ -62,3 +62,29 @@ func (app *application) createQuoteHandler(w http.ResponseWriter, r *http.Reques
 		return
 	}
 }
+
+func (app *application) listQuotesHandler(w http.ResponseWriter, r *http.Request) {
+
+	var input struct {
+		Content string
+		Tags    []string
+		data.Filters
+	}
+
+	v := validator.New()
+
+	qs := r.URL.Query()
+	input.Content = app.readString(qs, "content", "")
+	input.Tags = app.readCSV(qs, "tags", []string{})
+
+	input.Filters.Page = app.readInt(qs, "page", 1, v)
+	input.Filters.PageSize = app.readInt(qs, "page_size", 20, v)
+	input.Filters.Sort = app.readString(qs, "sort", "id")
+	input.Filters.SortSafeList = []string{"content", "modified", "created", "user_id", "-content", "-modified", "-created", "-user_id"}
+
+	if data.ValidateFilters(v, input.Filters); !v.Valid() {
+		app.failedValidationResponse(w, r, v.Errors)
+		return
+	}
+
+}
