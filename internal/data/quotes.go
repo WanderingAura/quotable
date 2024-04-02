@@ -57,6 +57,42 @@ func ValidateQuote(v *validator.Validator, quote *Quote) {
 	v.Check(validator.Unique(quote.Tags), "tags", "must not contain duplicate values")
 }
 
+func (m *QuoteDatabaseModel) Get(id int64) (*Quote, error) {
+	query := `
+	SELECT id, created_at, last_modified, user_id, content, author, source_title, source_type, tags, version
+	FROM quotes
+	WHERE id = $1`
+
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+
+	var quote Quote
+
+	err := m.DB.QueryRowContext(ctx, query, id).Scan(
+		&quote.ID,
+		&quote.CreatedAt,
+		&quote.LastModified,
+		&quote.UserID,
+		&quote.Content,
+		&quote.Author,
+		&quote.Source.Title,
+		&quote.Source.Type,
+		pq.Array(&quote.Tags),
+		&quote.Version,
+	)
+
+	if err != nil {
+		switch {
+		case errors.Is(err, sql.ErrNoRows):
+			return nil, ErrRecordNotFound
+		default:
+			return nil, err
+		}
+	}
+
+	return &quote, nil
+}
+
 func (m *QuoteDatabaseModel) Insert(quote *Quote) error {
 
 	query := `
@@ -104,12 +140,73 @@ func (m *QuoteDatabaseModel) GetAll(content string, tags []string, filters Filte
 
 	// if title or genre is empty then the WHERE conditions default to true
 	query := fmt.Sprintf(`
-		SELECT count(*) OVER(), id, created_at, last_modified, user_id, content, author, source_title, source_type, tags, version
-		FROM quotes
-		WHERE (to_tsvector('english', title) @@ plainto_tsquery('english', $1) OR $1 = '')
-		AND (genres @> $2 OR $2 = '{}')
+		SELECT count(*) OVER(), quotes.id, quotes.created_at, quotes.last_modified, users.user_id, users.username, 
+		quotes.content, quotes.author, quotes.source_title, quotes.source_type, quotes.tags, quotes.version
+		FROM quotes INNER JOIN users ON users.id = quotes.user_id
+		WHERE (to_tsvector('english', quotes.content) @@ plainto_tsquery('english', $1) OR $1 = '')
+		AND (quotes.tags @> $2 OR $2 = '{}')
 		ORDER BY %s %s, id ASC
 		LIMIT $3 OFFSET $4`, filters.sortColumn(), filters.sortDirection())
+
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+
+	args := []interface{}{content, pq.Array(tags), filters.limit(), filters.offset()}
+
+	rows, err := m.DB.QueryContext(ctx, query, args...)
+	if err != nil {
+		return nil, Metadata{}, err
+	}
+
+	defer rows.Close()
+
+	quotes := []*Quote{}
+
+	var totalRecords int
+
+	for rows.Next() {
+		var quote Quote
+		err := rows.Scan(
+			&totalRecords,
+			&quote.ID,
+			&quote.CreatedAt,
+			&quote.LastModified,
+			&quote.UserID,
+			&quote.Content,
+			&quote.Author,
+			&quote.Source.Title,
+			&quote.Source.Type,
+			pq.Array(&quote.Tags),
+			&quote.Version,
+		)
+		if err != nil {
+			return nil, Metadata{}, err
+		}
+
+		quotes = append(quotes, &quote)
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, Metadata{}, err
+	}
+
+	metadata := calculateMetadata(totalRecords, filters.Page, filters.PageSize)
+
+	return quotes, metadata, nil
+}
+
+func (m *QuoteDatabaseModel) GetAllForUser(userID int64, content string, tags []string, filters Filters) ([]*Quote, Metadata, error) {
+
+	// if title or genre is empty then the WHERE conditions default to true
+	query := fmt.Sprintf(`
+		SELECT count(*) OVER(), quotes.id, quotes.created_at, quotes.last_modified, users.user_id, users.username, 
+		quotes.content, quotes.author, quotes.source_title, quotes.source_type, quotes.tags, quotes.version
+		FROM quotes INNER JOIN users ON users.id = quotes.user_id
+		WHERE users.id = $1
+		AND(to_tsvector('english', quotes.content) @@ plainto_tsquery('english', $2) OR $2 = '')
+		AND (quotes.tags @> $3 OR $3 = '{}')
+		ORDER BY %s %s, id ASC
+		LIMIT $4 OFFSET $5`, filters.sortColumn(), filters.sortDirection())
 
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()

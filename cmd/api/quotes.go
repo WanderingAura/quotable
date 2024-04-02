@@ -1,6 +1,7 @@
 package main
 
 import (
+	"errors"
 	"fmt"
 	"net/http"
 
@@ -63,8 +64,68 @@ func (app *application) createQuoteHandler(w http.ResponseWriter, r *http.Reques
 	}
 }
 
+func (app *application) getQuoteHandler(w http.ResponseWriter, r *http.Request) {
+	id, err := app.readIDParam(r)
+	if err != nil {
+		app.notFoundResponse(w, r)
+		return
+	}
+
+	quote, err := app.models.Quotes.Get(id)
+	if err != nil {
+		switch {
+		case errors.Is(err, data.ErrRecordNotFound):
+			app.notFoundResponse(w, r)
+		default:
+			app.serverErrorResponse(w, r, err)
+		}
+		return
+	}
+
+	err = app.writeJSON(w, envelope{"quote": quote}, http.StatusOK, nil)
+	if err != nil {
+		app.serverErrorResponse(w, r, err)
+	}
+}
+
 func (app *application) listQuotesHandler(w http.ResponseWriter, r *http.Request) {
 
+	var input struct {
+		Content string
+		Tags    []string
+		data.Filters
+	}
+
+	v := validator.New()
+
+	qs := r.URL.Query()
+	input.Content = app.readString(qs, "content", "")
+	input.Tags = app.readCSV(qs, "tags", []string{})
+
+	input.Filters.Page = app.readInt(qs, "page", 1, v)
+	input.Filters.PageSize = app.readInt(qs, "page_size", 20, v)
+	input.Filters.Sort = app.readString(qs, "sort", "id")
+	input.Filters.SortSafeList = []string{"content", "modified", "created", "user_id", "-content", "-modified", "-created", "-user_id"}
+
+	if data.ValidateFilters(v, input.Filters); !v.Valid() {
+		app.failedValidationResponse(w, r, v.Errors)
+		return
+	}
+
+	quotes, metadata, err := app.models.Quotes.GetAll(input.Content, input.Tags, input.Filters)
+	if err != nil {
+		app.serverErrorResponse(w, r, err)
+		return
+	}
+
+	err = app.writeJSON(w, envelope{"quotes": quotes, "metadata": metadata}, http.StatusOK, nil)
+	if err != nil {
+		app.serverErrorResponse(w, r, err)
+	}
+
+}
+
+func (app *application) listUserQuotesHandler(w http.ResponseWriter, r *http.Request) {
 	var input struct {
 		Content string
 		Tags    []string

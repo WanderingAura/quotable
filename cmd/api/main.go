@@ -56,7 +56,7 @@ func main() {
 	flag.StringVar(&config.env, "env", "development", "Environment (development|staging|production)")
 	flag.BoolVar(&config.debug, "debug", false, "debug mode")
 	flag.StringVar(&config.logPath, "log-path", "/logs/quotable/api/quotable.log", "File to write error logs in (absolute path)")
-	flag.StringVar(&config.db.dsn, "dsn", "", "Postgres database source name")
+	flag.StringVar(&config.db.dsn, "db-dsn", "", "Postgres database source name")
 	flag.IntVar(&config.db.maxOpenConnections, "db-max-open-conns", 25, "Postgres max open connections")
 	flag.IntVar(&config.db.maxIdleConnections, "db-max-idle-conns", 25, "Postgres max idle connections")
 	flag.StringVar(&config.db.maxIdleDuration, "db-max-idle-time", "15m", "Postgres max connection idle time")
