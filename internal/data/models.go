@@ -11,15 +11,17 @@ var (
 )
 
 type Models struct {
-	Quotes QuoteDatabaseModel // change to corresponding interfaces when ready.
-	Users  UserDatabaseModel
-	Tokens TokenDatabaseModel
+	Quotes      QuoteDatabaseModel // change to corresponding interfaces when ready.
+	Users       UserDatabaseModel
+	Tokens      TokenDatabaseModel
+	Permissions PermissionDatabaseModel
 }
 
 func New(db *sql.DB) Models {
 	return Models{
-		Quotes: QuoteDatabaseModel{DB: db},
-		Users:  UserDatabaseModel{DB: db},
-		Tokens: TokenDatabaseModel{DB: db},
+		Quotes:      QuoteDatabaseModel{DB: db},
+		Users:       UserDatabaseModel{DB: db},
+		Tokens:      TokenDatabaseModel{DB: db},
+		Permissions: PermissionDatabaseModel{DB: db},
 	}
 }
