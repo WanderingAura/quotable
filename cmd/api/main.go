@@ -15,6 +15,11 @@ import (
 	"github.com/WanderingAura/quotable/internal/mailer"
 )
 
+var (
+	buildTime string
+	version   string
+)
+
 type application struct {
 	config   config
 	infoLog  *log.Logger
@@ -64,7 +69,15 @@ func main() {
 	flag.IntVar(&config.limiter.burst, "limiter-burst", 4, "Rate limiter maximum burst")
 	flag.BoolVar(&config.limiter.enabled, "limiter-enable", true, "Enable rate limiter")
 
+	displayVersion := flag.Bool("version", false, "Display version and exit")
+
 	flag.Parse()
+
+	if *displayVersion {
+		fmt.Printf("Version:\t%s\n", version)
+		fmt.Printf("Build time:\t%s\n", buildTime)
+		os.Exit(0)
+	}
 
 	logFile, err := os.Open(config.logPath)
 	if err != nil {
