@@ -13,7 +13,7 @@ func (app *application) routes() http.Handler {
 	router.MethodNotAllowed = http.HandlerFunc(app.methodNotAllowedResponse)
 
 	router.HandlerFunc(http.MethodGet, "/quotes", app.listQuotesHandler)
-	router.HandlerFunc(http.MethodGet, "/tokens/auth", app.createAuthenticationTokenHandler)
+	router.HandlerFunc(http.MethodPost, "/tokens/auth", app.createAuthenticationTokenHandler)
 	router.HandlerFunc(http.MethodPost, "/user/register", app.registerUserHandler)
 	router.HandlerFunc(http.MethodGet, "/quotes/:id", app.getQuoteHandler)
 	router.HandlerFunc(http.MethodGet, "/users/:user_id/quotes", app.listUserQuotesHandler)
