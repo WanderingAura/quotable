@@ -60,7 +60,7 @@ func main() {
 	flag.IntVar(&config.port, "port", 4000, "API server port")
 	flag.StringVar(&config.env, "env", "development", "Environment (development|staging|production)")
 	flag.BoolVar(&config.debug, "debug", false, "debug mode")
-	flag.StringVar(&config.logPath, "log-path", "/logs/quotable/api/quotable.log", "File to write error logs in (absolute path)")
+	flag.StringVar(&config.logPath, "log-path", "./logs/quotable.log", "File to write error logs in")
 	flag.StringVar(&config.db.dsn, "db-dsn", "", "Postgres database source name")
 	flag.IntVar(&config.db.maxOpenConnections, "db-max-open-conns", 25, "Postgres max open connections")
 	flag.IntVar(&config.db.maxIdleConnections, "db-max-idle-conns", 25, "Postgres max idle connections")
@@ -79,11 +79,14 @@ func main() {
 		os.Exit(0)
 	}
 
-	logFile, err := os.Open(config.logPath)
-	if err != nil {
-		log.Fatal(err)
+	if config.db.dsn == "" {
+		config.db.dsn = os.Getenv("QUOTABLE_DSN")
 	}
-	errorLog := log.New(logFile, "[ERROR]\t", log.Ldate|log.Ltime)
+	// logFile, err := os.Open(config.logPath)
+	// if err != nil {
+	// 	log.Fatal(err)
+	// }
+	errorLog := log.New(os.Stdout, "[ERROR]\t", log.Ldate|log.Ltime)
 	infoLog := log.New(os.Stdout, "[INFO]\t", log.Ldate|log.Ltime|log.Lshortfile)
 
 	db, err := openDB(config)
@@ -96,6 +99,7 @@ func main() {
 		errorLog: errorLog,
 		infoLog:  infoLog,
 		models:   data.New(db),
+		mailer:   mailer.New(config.smtp.host, config.smtp.port, config.smtp.username, config.smtp.password, config.smtp.sender),
 	}
 
 	srv := http.Server{
@@ -104,6 +108,7 @@ func main() {
 		ErrorLog: errorLog,
 	}
 
+	app.infoLog.Printf("server started on port %d", config.port)
 	srv.ListenAndServe()
 }
 

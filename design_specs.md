@@ -5,9 +5,6 @@ An app which allows users to share and discover quotes. Quotes can be from any s
 
 Users should be able to register an account, activate it and post quotes. Users can navigate to the discover page, which displays all the quotes posted by activated users. Quotes can be searched in a search bar. 
 
-Deadline: start of May 2024
-## Stakeholders
-Me and my hecking personal development
 # Requirements
 ### Frontend
 - [ ] "My quotes" page when user is logged in

@@ -65,7 +65,7 @@ func (app *application) createQuoteHandler(w http.ResponseWriter, r *http.Reques
 }
 
 func (app *application) getQuoteHandler(w http.ResponseWriter, r *http.Request) {
-	id, err := app.readIDParam(r)
+	id, err := app.readParamByName(r, "quote_id")
 	if err != nil {
 		app.notFoundResponse(w, r)
 		return
@@ -104,8 +104,8 @@ func (app *application) listQuotesHandler(w http.ResponseWriter, r *http.Request
 
 	input.Filters.Page = app.readInt(qs, "page", 1, v)
 	input.Filters.PageSize = app.readInt(qs, "page_size", 20, v)
-	input.Filters.Sort = app.readString(qs, "sort", "id")
-	input.Filters.SortSafeList = []string{"content", "modified", "created", "user_id", "-content", "-modified", "-created", "-user_id"}
+	input.Filters.Sort = app.readString(qs, "sort", "quotes.id")
+	input.Filters.SortSafeList = []string{"quotes.id", "content", "modified", "created", "users.id", "-quotes.id", "-content", "-modified", "-created", "-users.id"}
 
 	if data.ValidateFilters(v, input.Filters); !v.Valid() {
 		app.failedValidationResponse(w, r, v.Errors)
@@ -126,6 +126,11 @@ func (app *application) listQuotesHandler(w http.ResponseWriter, r *http.Request
 }
 
 func (app *application) listUserQuotesHandler(w http.ResponseWriter, r *http.Request) {
+	userID, err := app.readParamByName(r, "user_id")
+	if err != nil {
+		app.notFoundResponse(w, r)
+		return
+	}
 	var input struct {
 		Content string
 		Tags    []string
@@ -148,4 +153,14 @@ func (app *application) listUserQuotesHandler(w http.ResponseWriter, r *http.Req
 		return
 	}
 
+	quotes, metadata, err := app.models.Quotes.GetAllForUser(userID, input.Content, input.Tags, input.Filters)
+	if err != nil {
+		app.serverErrorResponse(w, r, err)
+		return
+	}
+
+	err = app.writeJSON(w, envelope{"quotes": quotes, "metadata": metadata}, http.StatusOK, nil)
+	if err != nil {
+		app.serverErrorResponse(w, r, err)
+	}
 }

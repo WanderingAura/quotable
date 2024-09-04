@@ -97,9 +97,9 @@ func (m *QuoteDatabaseModel) Insert(quote *Quote) error {
 
 	query := `
 		INSERT INTO quotes (user_id, content, author, source_title, source_type, tags)
-		VALUES ($1, $2, $3, $4, $5)
+		VALUES ($1, $2, $3, $4, $5, $6)
 		RETURNING id, created_at, version`
-
+	fmt.Printf("user id %d", quote.UserID)
 	args := []interface{}{quote.UserID, quote.Content, quote.Author, quote.Source.Title, quote.Source.Type, pq.Array(quote.Tags)}
 
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
@@ -140,12 +140,12 @@ func (m *QuoteDatabaseModel) GetAll(content string, tags []string, filters Filte
 
 	// if title or genre is empty then the WHERE conditions default to true
 	query := fmt.Sprintf(`
-		SELECT count(*) OVER(), quotes.id, quotes.created_at, quotes.last_modified, users.user_id, users.username, 
+		SELECT count(*) OVER(), quotes.id, quotes.created_at, quotes.last_modified, users.id, users.username, 
 		quotes.content, quotes.author, quotes.source_title, quotes.source_type, quotes.tags, quotes.version
 		FROM quotes INNER JOIN users ON users.id = quotes.user_id
 		WHERE (to_tsvector('english', quotes.content) @@ plainto_tsquery('english', $1) OR $1 = '')
 		AND (quotes.tags @> $2 OR $2 = '{}')
-		ORDER BY %s %s, id ASC
+		ORDER BY %s %s, users.id ASC
 		LIMIT $3 OFFSET $4`, filters.sortColumn(), filters.sortDirection())
 
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
