@@ -9,6 +9,19 @@ import (
 	"github.com/WanderingAura/quotable/internal/validator"
 )
 
+var quoteSortSafeList = []string{
+	"id",
+	"content",
+	"modified_at",
+	"created_at",
+	"user_id",
+	"-id",
+	"-content",
+	"-modified_at",
+	"-created_at",
+	"-user_id",
+}
+
 func (app *application) createQuoteHandler(w http.ResponseWriter, r *http.Request) {
 
 	// an anonymous struct to hold the information that we expect to be in the request body
@@ -17,7 +30,7 @@ func (app *application) createQuoteHandler(w http.ResponseWriter, r *http.Reques
 	var input struct {
 		Content string      `json:"content"`
 		Author  string      `json:"author,omitempty"`
-		Source  data.Source `json:"source"`
+		Source  data.Source `json:"source,omitempty"`
 		Tags    []string    `json:"tags,omitempty"`
 	}
 
@@ -105,7 +118,7 @@ func (app *application) listQuotesHandler(w http.ResponseWriter, r *http.Request
 	input.Filters.Page = app.readInt(qs, "page", 1, v)
 	input.Filters.PageSize = app.readInt(qs, "page_size", 20, v)
 	input.Filters.Sort = app.readString(qs, "sort", "quotes.id")
-	input.Filters.SortSafeList = []string{"quotes.id", "content", "modified", "created", "users.id", "-quotes.id", "-content", "-modified", "-created", "-users.id"}
+	input.Filters.SortSafeList = quoteSortSafeList
 
 	if data.ValidateFilters(v, input.Filters); !v.Valid() {
 		app.failedValidationResponse(w, r, v.Errors)
@@ -146,7 +159,7 @@ func (app *application) listUserQuotesHandler(w http.ResponseWriter, r *http.Req
 	input.Filters.Page = app.readInt(qs, "page", 1, v)
 	input.Filters.PageSize = app.readInt(qs, "page_size", 20, v)
 	input.Filters.Sort = app.readString(qs, "sort", "id")
-	input.Filters.SortSafeList = []string{"content", "modified", "created", "user_id", "-content", "-modified", "-created", "-user_id"}
+	input.Filters.SortSafeList = quoteSortSafeList
 
 	if data.ValidateFilters(v, input.Filters); !v.Valid() {
 		app.failedValidationResponse(w, r, v.Errors)

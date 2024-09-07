@@ -6,9 +6,11 @@ import (
 	"github.com/julienschmidt/httprouter"
 )
 
+// Returns a handler that handles all requests to the server
 func (app *application) routes() http.Handler {
 	router := httprouter.New()
 
+	// Set default responses for error scenarios
 	router.NotFound = http.HandlerFunc(app.notFoundResponse)
 	router.MethodNotAllowed = http.HandlerFunc(app.methodNotAllowedResponse)
 
@@ -21,5 +23,6 @@ func (app *application) routes() http.Handler {
 	router.HandlerFunc(http.MethodPost, "/v1/quotes", app.requireAuthenticatedUser(app.createQuoteHandler))
 	router.HandlerFunc(http.MethodGet, "/v1/users/:user_id/quotes", app.requireAuthenticatedUser(app.listUserQuotesHandler))
 
+	// Set up the relevant middleware before returning the handler
 	return app.rateLimit(app.authenticate(router))
 }

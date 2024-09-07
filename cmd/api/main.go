@@ -1,3 +1,5 @@
+// The main package for quotable. Contains the code for starting the application, serving http requests
+// and handling endpoints.
 package main
 
 import (
@@ -15,20 +17,23 @@ import (
 	"github.com/WanderingAura/quotable/internal/mailer"
 )
 
+// The value is burnt into the executable at compile time.
 var (
 	buildTime string
 	version   string
 )
 
+// Stores all the relevant info about the app (to be used by the handlers)
 type application struct {
 	config   config
 	infoLog  *log.Logger
 	errorLog *log.Logger
-	models   data.Models
-	mailer   mailer.Mailer
-	wg       sync.WaitGroup
+	models   data.Models    // Exposes CRUD operations on database tables
+	mailer   mailer.Mailer  // Used for sending an email after user registration
+	wg       sync.WaitGroup // Used for graceful shutdown
 }
 
+// Used to configure the various settings of the app on start up
 type config struct {
 	port    int
 	env     string
@@ -54,17 +59,24 @@ type config struct {
 	}
 }
 
+// Initialises the application and sets it up to start listening for HTTP reqs
 func main() {
 	var config config
 
 	flag.IntVar(&config.port, "port", 4000, "API server port")
+
 	flag.StringVar(&config.env, "env", "development", "Environment (development|staging|production)")
 	flag.BoolVar(&config.debug, "debug", false, "debug mode")
+
 	flag.StringVar(&config.logPath, "log-path", "./logs/quotable.log", "File to write error logs in")
+
+	// database configs
 	flag.StringVar(&config.db.dsn, "db-dsn", "", "Postgres database source name")
 	flag.IntVar(&config.db.maxOpenConnections, "db-max-open-conns", 25, "Postgres max open connections")
 	flag.IntVar(&config.db.maxIdleConnections, "db-max-idle-conns", 25, "Postgres max idle connections")
 	flag.StringVar(&config.db.maxIdleDuration, "db-max-idle-time", "15m", "Postgres max connection idle time")
+
+	// rate limiting config
 	flag.Float64Var(&config.limiter.rps, "limiter-rps", 2, "Rate limiter maximum requests per second")
 	flag.IntVar(&config.limiter.burst, "limiter-burst", 4, "Rate limiter maximum burst")
 	flag.BoolVar(&config.limiter.enabled, "limiter-enable", true, "Enable rate limiter")
@@ -82,12 +94,18 @@ func main() {
 	if config.db.dsn == "" {
 		config.db.dsn = os.Getenv("QUOTABLE_DSN")
 	}
-	// logFile, err := os.Open(config.logPath)
-	// if err != nil {
-	// 	log.Fatal(err)
-	// }
-	errorLog := log.New(os.Stdout, "[ERROR]\t", log.Ldate|log.Ltime)
-	infoLog := log.New(os.Stdout, "[INFO]\t", log.Ldate|log.Ltime|log.Lshortfile)
+
+	logFile := os.Stdout
+	if !config.debug {
+		logFile, err := os.Open(config.logPath)
+		if err != nil {
+			log.Fatal(err)
+		}
+		defer logFile.Close()
+	}
+
+	errorLog := log.New(logFile, "[ERROR]\t", log.Ldate|log.Ltime)
+	infoLog := log.New(logFile, "[INFO]\t", log.Ldate|log.Ltime|log.Lshortfile)
 
 	db, err := openDB(config)
 	if err != nil {
@@ -102,6 +120,7 @@ func main() {
 		mailer:   mailer.New(config.smtp.host, config.smtp.port, config.smtp.username, config.smtp.password, config.smtp.sender),
 	}
 
+	// Sets up the server and handlers
 	srv := http.Server{
 		Addr:     fmt.Sprintf(":%d", config.port),
 		Handler:  app.routes(),
@@ -112,6 +131,7 @@ func main() {
 	srv.ListenAndServe()
 }
 
+// Sets up the postgres database connection
 func openDB(config config) (*sql.DB, error) {
 	db, err := sql.Open("postgres", config.db.dsn)
 	if err != nil {

@@ -24,7 +24,7 @@ func (u *User) IsAnonymous() bool {
 type User struct {
 	ID        int64     `json:"id"`
 	CreatedAt time.Time `json:"created_at"`
-	Username  string    `json:"name"`
+	Username  string    `json:"username"`
 	Email     string    `json:"email"`
 	Password  password  `json:"-"`
 	Activated bool      `json:"activated"`
@@ -84,8 +84,8 @@ func ValidatePasswordPlaintext(v *validator.Validator, password string) {
 }
 
 func ValidateUser(v *validator.Validator, user *User) {
-	v.Check(user.Username != "", "name", "must be provided")
-	v.Check(len(user.Username) <= 500, "name", "must not be more than 500 bytes long")
+	v.Check(user.Username != "", "username", "must be provided")
+	v.Check(len(user.Username) <= 500, "username", "must not be more than 500 bytes long")
 
 	ValidateEmail(v, user.Email)
 
@@ -123,7 +123,7 @@ func (m *UserDatabaseModel) Insert(user *User) error {
 
 func (m *UserDatabaseModel) GetByEmail(email string) (*User, error) {
 	query := `
-		SELECT id, created_at, name, email, password_hash, activated, version
+		SELECT id, created_at, username, email, password_hash, activated, version
 		FROM users
 		WHERE email = $1`
 
@@ -190,7 +190,7 @@ func (m *UserDatabaseModel) GetForToken(scope, tokenPlaintext string) (*User, er
 	tokenHash := sha256.Sum256([]byte(tokenPlaintext))
 
 	query := `
-		SELECT users.id, users.created_at, users.name, users.email, users.password_hash, users.activated, users.version FROM users
+		SELECT users.id, users.created_at, users.username, users.email, users.password_hash, users.activated, users.version FROM users
 		INNER JOIN tokens
 		ON users.id = tokens.user_id
 		WHERE tokens.hash = $1

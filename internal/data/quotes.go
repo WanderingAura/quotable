@@ -99,7 +99,7 @@ func (m *QuoteDatabaseModel) Insert(quote *Quote) error {
 		INSERT INTO quotes (user_id, content, author, source_title, source_type, tags)
 		VALUES ($1, $2, $3, $4, $5, $6)
 		RETURNING id, created_at, version`
-	fmt.Printf("user id %d", quote.UserID)
+
 	args := []interface{}{quote.UserID, quote.Content, quote.Author, quote.Source.Title, quote.Source.Type, pq.Array(quote.Tags)}
 
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
@@ -140,12 +140,12 @@ func (m *QuoteDatabaseModel) GetAll(content string, tags []string, filters Filte
 
 	// if title or genre is empty then the WHERE conditions default to true
 	query := fmt.Sprintf(`
-		SELECT count(*) OVER(), quotes.id, quotes.created_at, quotes.last_modified, users.id, users.username, 
-		quotes.content, quotes.author, quotes.source_title, quotes.source_type, quotes.tags, quotes.version
-		FROM quotes INNER JOIN users ON users.id = quotes.user_id
+		SELECT count(*) OVER(), id, created_at, last_modified, user_id, 
+		content, author, source_title, source_type, tags, version
+		FROM quotes
 		WHERE (to_tsvector('english', quotes.content) @@ plainto_tsquery('english', $1) OR $1 = '')
 		AND (quotes.tags @> $2 OR $2 = '{}')
-		ORDER BY %s %s, users.id ASC
+		ORDER BY %s %s, created_at ASC
 		LIMIT $3 OFFSET $4`, filters.sortColumn(), filters.sortDirection())
 
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
@@ -199,19 +199,19 @@ func (m *QuoteDatabaseModel) GetAllForUser(userID int64, content string, tags []
 
 	// if title or genre is empty then the WHERE conditions default to true
 	query := fmt.Sprintf(`
-		SELECT count(*) OVER(), quotes.id, quotes.created_at, quotes.last_modified, users.user_id, users.username, 
-		quotes.content, quotes.author, quotes.source_title, quotes.source_type, quotes.tags, quotes.version
-		FROM quotes INNER JOIN users ON users.id = quotes.user_id
-		WHERE users.id = $1
+		SELECT count(*) OVER(), id, created_at, last_modified, user_id, 
+		content, author, source_title, source_type, tags, version
+		FROM quotes
+		WHERE user_id = $1
 		AND(to_tsvector('english', quotes.content) @@ plainto_tsquery('english', $2) OR $2 = '')
 		AND (quotes.tags @> $3 OR $3 = '{}')
-		ORDER BY %s %s, id ASC
+		ORDER BY %s %s, created_at ASC
 		LIMIT $4 OFFSET $5`, filters.sortColumn(), filters.sortDirection())
 
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()
 
-	args := []interface{}{content, pq.Array(tags), filters.limit(), filters.offset()}
+	args := []interface{}{userID, content, pq.Array(tags), filters.limit(), filters.offset()}
 
 	rows, err := m.DB.QueryContext(ctx, query, args...)
 	if err != nil {
@@ -253,4 +253,14 @@ func (m *QuoteDatabaseModel) GetAllForUser(userID int64, content string, tags []
 	metadata := calculateMetadata(totalRecords, filters.Page, filters.PageSize)
 
 	return quotes, metadata, nil
+}
+
+func (m *QuoteDatabaseModel) Delete(id int64) error {
+	query := `
+		DELETE FROM quotes WHERE id = $1 RETURNING id`
+
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+
+	return m.DB.QueryRowContext(ctx, query, id).Scan(&id)
 }
