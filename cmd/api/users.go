@@ -64,7 +64,7 @@ func (app *application) registerUserHandler(w http.ResponseWriter, r *http.Reque
 		}
 		err = app.mailer.Send(user.Email, "user_welcome.tmpl", data)
 		if err != nil {
-			app.errorLog.Printf("%s\n", err.Error())
+			app.logError(r, err)
 		}
 	})
 

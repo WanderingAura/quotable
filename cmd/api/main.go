@@ -15,6 +15,8 @@ import (
 
 	"github.com/WanderingAura/quotable/internal/data"
 	"github.com/WanderingAura/quotable/internal/mailer"
+	"github.com/rs/zerolog"
+	"github.com/rs/zerolog/pkgerrors"
 )
 
 // The value is burnt into the executable at compile time.
@@ -25,12 +27,11 @@ var (
 
 // Stores all the relevant info about the app (to be used by the handlers)
 type application struct {
-	config   config
-	infoLog  *log.Logger
-	errorLog *log.Logger
-	models   data.Models    // Exposes CRUD operations on database tables
-	mailer   mailer.Mailer  // Used for sending an email after user registration
-	wg       sync.WaitGroup // Used for graceful shutdown
+	config config
+	logger *zerolog.Logger
+	models data.Models    // Exposes CRUD operations on database tables
+	mailer mailer.Mailer  // Used for sending an email after user registration
+	wg     sync.WaitGroup // Used for graceful shutdown
 }
 
 // Used to configure the various settings of the app on start up
@@ -95,7 +96,7 @@ func main() {
 		config.db.dsn = os.Getenv("QUOTABLE_DSN")
 	}
 
-	logFile := os.Stdout
+	logFile := os.Stderr
 	if !config.debug {
 		logFile, err := os.Open(config.logPath)
 		if err != nil {
@@ -104,30 +105,30 @@ func main() {
 		defer logFile.Close()
 	}
 
-	errorLog := log.New(logFile, "[ERROR]\t", log.Ldate|log.Ltime)
-	infoLog := log.New(logFile, "[INFO]\t", log.Ldate|log.Ltime|log.Lshortfile)
+	zerolog.TimeFieldFormat = zerolog.TimeFormatUnix
+	zerolog.ErrorStackMarshaler = pkgerrors.MarshalStack
+	logger := zerolog.New(logFile).With().Timestamp().Logger()
 
 	db, err := openDB(config)
 	if err != nil {
-		errorLog.Fatal(err)
+		logger.Fatal().Stack().Err(err).Msg("")
 	}
 
 	app := &application{
-		config:   config,
-		errorLog: errorLog,
-		infoLog:  infoLog,
-		models:   data.New(db),
-		mailer:   mailer.New(config.smtp.host, config.smtp.port, config.smtp.username, config.smtp.password, config.smtp.sender),
+		config: config,
+		logger: &logger,
+		models: data.New(db),
+		mailer: mailer.New(config.smtp.host, config.smtp.port, config.smtp.username, config.smtp.password, config.smtp.sender),
 	}
 
 	// Sets up the server and handlers
 	srv := http.Server{
 		Addr:     fmt.Sprintf(":%d", config.port),
 		Handler:  app.routes(),
-		ErrorLog: errorLog,
+		ErrorLog: log.New(logger, "", 0),
 	}
 
-	app.infoLog.Printf("server started on port %d", config.port)
+	app.logger.Info().Msgf("server started on port %d", config.port)
 	srv.ListenAndServe()
 }
 
