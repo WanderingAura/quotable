@@ -52,7 +52,7 @@ func ValidateQuote(v *validator.Validator, quote *Quote) {
 
 	v.Check(quote.Tags != nil, "tags", "must be provided")
 	v.Check(len(quote.Tags) >= 1, "tags", "must contain at least one tag")
-	v.Check(len(quote.Tags) <= 5, "tags", "must not contain more than 5 tags")
+	v.Check(len(quote.Tags) <= 10, "tags", "must not contain more than 10 tags")
 
 	v.Check(validator.Unique(quote.Tags), "tags", "must not contain duplicate values")
 }
