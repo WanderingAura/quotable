@@ -2,7 +2,7 @@ package main
 
 import "net/http"
 
-func (app *application) healthcheckHandler(w http.ResponseWriter, r *http.Request) {
+func (app *application) versionCheckHandler(w http.ResponseWriter, r *http.Request) {
 
 	env := envelope{
 		"status": "available",

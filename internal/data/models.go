@@ -15,6 +15,7 @@ type Models struct {
 	Users       UserDatabaseModel
 	Tokens      TokenDatabaseModel
 	Permissions PermissionDatabaseModel
+	Like        LikesDatabaseModel
 }
 
 func New(db *sql.DB) Models {

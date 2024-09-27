@@ -23,6 +23,20 @@ type Quote struct {
 	Version      int       `json:"version"`
 }
 
+type QuoteOutput struct {
+	ID           int64     `json:"id"`
+	CreatedAt    time.Time `json:"created_at"`
+	LastModified time.Time `json:"last_modified"`
+	UserID       int64     `json:"user_id"`
+	Content      string    `json:"content"`
+	Author       string    `json:"author"`
+	Source       Source    `json:"source,omitempty"`
+	Tags         []string  `json:"tags"`
+	Likes        int       `json:"likes"`
+	Dislikes     int       `json:"dislikes"`
+	Version      int       `json:"version"`
+}
+
 // TODO: make the source type marhsal JSON and unmarshal using the format sourceTitle(sourceType)?
 type Source struct {
 	Title string `json:"title"`
@@ -138,6 +152,7 @@ func (m *QuoteDatabaseModel) Update(quote *Quote) error {
 
 func (m *QuoteDatabaseModel) GetAll(content string, tags []string, filters Filters) ([]*Quote, Metadata, error) {
 
+	// TODO: how would i get the likes and dislikes of a quote as well?
 	// if title or genre is empty then the WHERE conditions default to true
 	query := fmt.Sprintf(`
 		SELECT count(*) OVER(), id, created_at, last_modified, user_id, 
@@ -182,6 +197,7 @@ func (m *QuoteDatabaseModel) GetAll(content string, tags []string, filters Filte
 		if err != nil {
 			return nil, Metadata{}, err
 		}
+		// TODO: add likes and dislikes query here.
 
 		quotes = append(quotes, &quote)
 	}
@@ -256,11 +272,25 @@ func (m *QuoteDatabaseModel) GetAllForUser(userID int64, content string, tags []
 }
 
 func (m *QuoteDatabaseModel) Delete(id int64) error {
+	if id < 1 {
+		return ErrRecordNotFound
+	}
 	query := `
 		DELETE FROM quotes WHERE id = $1 RETURNING id`
 
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()
 
-	return m.DB.QueryRowContext(ctx, query, id).Scan(&id)
+	res, err := m.DB.ExecContext(ctx, query, id)
+	if err != nil {
+		return err
+	}
+	numRows, err := res.RowsAffected()
+	if err != nil {
+		return err
+	}
+	if numRows == 0 {
+		return ErrRecordNotFound
+	}
+	return nil
 }

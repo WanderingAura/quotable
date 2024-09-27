@@ -41,3 +41,19 @@ func (app *application) readInt(qs url.Values, key string, defaultValue int, v *
 
 	return i
 }
+
+func (app *application) readBool(qs url.Values, key string, defaultValue bool, v *validator.Validator) bool {
+	s := qs.Get(key)
+
+	switch s {
+	case "":
+		return defaultValue
+	case "true":
+		return true
+	case "false":
+		return false
+	default:
+		v.AddError(key, "must be either true or false")
+		return defaultValue
+	}
+}

@@ -51,6 +51,8 @@ func (app *application) registerUserHandler(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
+	err = app.models.Permissions.AddForUser(user.ID, "quotes:read")
+
 	token, err := app.models.Tokens.New(user.ID, 3*24*time.Hour, data.ScopeActivation)
 	if err != nil {
 		app.serverErrorResponse(w, r, err)

@@ -58,6 +58,8 @@ func (m *PermissionDatabaseModel) GetAllForUser(id int64) (Permissions, error) {
 }
 
 func (m *PermissionDatabaseModel) AddForUser(userID int64, codes ...string) error {
+	// the 2nd line of the query creates a sub-table created from the user ID as the first field
+	// and the corresponding ids for the permission codes in the codes array.
 	query := `
 		INSERT INTO users_permissions
 		SELECT $1, permissions.id FROM permissions WHERE permissions.code = ANY($2)`
