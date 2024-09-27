@@ -37,7 +37,7 @@ This sets up the database and the user that we are going to use to connect to it
 
 ## Setting up the tables
 
-For convenience set the environment variable `export QUOTABLE_DSN=postgres://test_user:test_pass@localhost/quotable` inside ~/.bashrc. (You don't have to do this, but if you don't replace $QUOTABLE_DSN in the following instructions with the actual DSN). Remember to `source ~/.bashrc` in the relevant terminal afterwards.
+For convenience set the environment variable `export QUOTABLE_DSN=postgres://test_user:test_pass@localhost/quotable` inside ~/.bashrc. (You don't have to do this if you replace $QUOTABLE_DSN in the following instructions with the actual DSN). Remember to `source ~/.bashrc` in the relevant terminal afterwards.
 Again make sure the migrate CLI tool is installed then execute the following in the project directory:
 `migrate -path=./migrations -database=$QUOTABLE_DSN up`
 If successful the output should be similar to the following:
@@ -54,8 +54,11 @@ If successful the output should be similar to the following:
 
 The database is now fully set up.
 
-## Running the API locally
+# Building and running the API locally
 
-Type `go run ./cmd/api -db-dsn=$QUOTABLE_DSN` in the project directory and the API should start running on the default port 4000,
+Type `make run/api` in the project directory and the API should start running on the default port 4000.
 
 Then you can start to curl requests to the API.
+
+# Examples
+
