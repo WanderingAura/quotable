@@ -21,7 +21,7 @@ auth_token=$(curl -X POST -d $login_data | grep Plaintext | grep -oE "\"[A-Z0-9]
 while read -r req_body
 do
   # Post the JSON in the current line as the request body
-  curl -X POST -H "Content-Type: application/json" -d "$req_body" $CREATE_QUOTES_ENDPOINT
+  curl -X POST -H "Content-Type: application/json" -H "Authorization: Bearer $auth_token" -d "$req_body" $CREATE_QUOTES_ENDPOINT
 
   # Sleep for a short duration to avoid overwhelming the server (adjust according to rate limit)
   sleep 0.1
