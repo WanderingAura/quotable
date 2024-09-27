@@ -13,11 +13,10 @@ import (
 )
 
 func (app *application) serve() error {
-	// TODO: create custom logger which logs errors and info into a file as well as logs info to stdout.
 	srv := &http.Server{
 		Addr:         fmt.Sprintf(":%d", app.config.port),
 		Handler:      app.routes(),
-		ErrorLog:     log.New(app.errorLog.Writer(), "", 0),
+		ErrorLog:     log.New(app.logger, "", 0),
 		IdleTimeout:  time.Minute,
 		ReadTimeout:  10 * time.Second,
 		WriteTimeout: 30 * time.Second,
@@ -31,7 +30,7 @@ func (app *application) serve() error {
 
 		s := <-quit
 
-		app.infoLog.Printf("signal: %s\n shutting down server", s.String())
+		app.logger.Info().Msgf("signal: %s\n shutting down server", s.String())
 
 		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 		defer cancel()
@@ -41,13 +40,13 @@ func (app *application) serve() error {
 			shutdownError <- err
 		}
 
-		app.infoLog.Printf("completing background tasks, port: %s", srv.Addr)
+		app.logger.Info().Msgf("completing background tasks, port: %s", srv.Addr)
 
 		app.wg.Wait()
 		shutdownError <- nil
 	}()
 
-	app.infoLog.Printf("starting server, port: %s, env: %s", srv.Addr, app.config.env)
+	app.logger.Info().Msgf("starting server, port: %s, env: %s", srv.Addr, app.config.env)
 
 	err := srv.ListenAndServe()
 	if !errors.Is(err, http.ErrServerClosed) {
@@ -59,7 +58,7 @@ func (app *application) serve() error {
 		return err
 	}
 
-	app.infoLog.Printf("stopped server, port: %s", srv.Addr)
+	app.logger.Info().Msgf("stopped server, port: %s", srv.Addr)
 
 	return nil
 }

@@ -8,7 +8,6 @@ import (
 	"flag"
 	"fmt"
 	"log"
-	"net/http"
 	"os"
 	"sync"
 	"time"
@@ -113,6 +112,7 @@ func main() {
 	if err != nil {
 		logger.Fatal().Stack().Err(err).Msg("")
 	}
+	logger.Info().Msg("database connection successful!")
 
 	app := &application{
 		config: config,
@@ -121,15 +121,10 @@ func main() {
 		mailer: mailer.New(config.smtp.host, config.smtp.port, config.smtp.username, config.smtp.password, config.smtp.sender),
 	}
 
-	// Sets up the server and handlers
-	srv := http.Server{
-		Addr:     fmt.Sprintf(":%d", config.port),
-		Handler:  app.routes(),
-		ErrorLog: log.New(logger, "", 0),
+	err = app.serve()
+	if err != nil {
+		logger.Fatal().Err(err).Msg("")
 	}
-
-	app.logger.Info().Msgf("server started on port %d", config.port)
-	srv.ListenAndServe()
 }
 
 // Sets up the postgres database connection
