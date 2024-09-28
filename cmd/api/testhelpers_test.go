@@ -20,9 +20,16 @@ func mockServer(routes http.Handler) *testServer {
 }
 
 func mockApp() *application {
+	defaultCfg := config{
+		port:    4000,
+		env:     "development",
+		debug:   false,
+		logPath: "./logs/quotable.log",
+	}
 	logger := zerolog.New(io.Discard).With().Timestamp().Logger()
 	return &application{
 		logger: &logger,
+		config: defaultCfg,
 	}
 }
 
@@ -43,13 +50,17 @@ func (ts *testServer) get(t *testing.T, url string) (int, http.Header, string) {
 }
 
 func middlewareResponse(t *testing.T, middleware func(http.Handler) http.Handler, mockHandler http.Handler) (int, http.Header, string) {
+	return handlerResponse(t, middleware(mockHandler))
+}
+
+func handlerResponse(t *testing.T, handler http.Handler) (int, http.Header, string) {
 	responseRecorder := httptest.NewRecorder()
 	req, err := http.NewRequest(http.MethodGet, "/", nil)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	middleware(mockHandler).ServeHTTP(responseRecorder, req)
+	handler.ServeHTTP(responseRecorder, req)
 
 	response := responseRecorder.Result()
 	defer response.Body.Close()
@@ -60,4 +71,5 @@ func middlewareResponse(t *testing.T, middleware func(http.Handler) http.Handler
 	bytes.TrimSpace(body)
 
 	return response.StatusCode, response.Header, string(body)
+
 }
