@@ -107,24 +107,28 @@ func (app *application) getQuoteHandler(w http.ResponseWriter, r *http.Request) 
 	}
 }
 
-func (app *application) listQuotesHandler(w http.ResponseWriter, r *http.Request) {
+type quoteSearchFields struct {
+	Content string
+	Tags    []string
+	data.Filters
+}
 
-	var input struct {
-		Content string
-		Tags    []string
-		data.Filters
-	}
-
-	v := validator.New()
-
+func (app *application) readQuoteSearch(r *http.Request, input *quoteSearchFields, v *validator.Validator) {
 	qs := r.URL.Query()
 	input.Content = app.readString(qs, "content", "")
 	input.Tags = app.readCSV(qs, "tags", []string{})
 
 	input.Filters.Page = app.readInt(qs, "page", 1, v)
 	input.Filters.PageSize = app.readInt(qs, "page_size", 20, v)
-	input.Filters.Sort = app.readString(qs, "sort", "quotes.id")
+	input.Filters.Sort = app.readString(qs, "sort", "id")
 	input.Filters.SortSafeList = quoteSortSafeList
+}
+
+func (app *application) listQuotesHandler(w http.ResponseWriter, r *http.Request) {
+
+	var input quoteSearchFields
+	v := validator.New()
+	app.readQuoteSearch(r, &input, v)
 
 	if data.ValidateFilters(v, input.Filters); !v.Valid() {
 		app.failedValidationResponse(w, r, v.Errors)
@@ -150,23 +154,10 @@ func (app *application) listUserQuotesHandler(w http.ResponseWriter, r *http.Req
 		app.notFoundResponse(w, r)
 		return
 	}
-	var input struct {
-		Content string
-		Tags    []string
-		data.Filters
-	}
 
+	var input quoteSearchFields
 	v := validator.New()
-
-	qs := r.URL.Query()
-	input.Content = app.readString(qs, "content", "")
-	input.Tags = app.readCSV(qs, "tags", []string{})
-
-	input.Filters.Page = app.readInt(qs, "page", 1, v)
-	input.Filters.PageSize = app.readInt(qs, "page_size", 20, v)
-	input.Filters.Sort = app.readString(qs, "sort", "id")
-	input.Filters.SortSafeList = quoteSortSafeList
-
+	app.readQuoteSearch(r, &input, v)
 	if data.ValidateFilters(v, input.Filters); !v.Valid() {
 		app.failedValidationResponse(w, r, v.Errors)
 		return

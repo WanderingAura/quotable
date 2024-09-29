@@ -38,7 +38,7 @@ db/migrations/new:
 .PHONY: db/migrations/up
 db/migrations/up: confirm
 	@echo 'Running up migrations...'
-	migration -path ./migrations -database ${QUOTABLE_DB_DSN} up
+	migrate -path ./migrations -database ${QUOTABLE_DB_DSN} up
 # database: # find out how to create a database automatically in makefiles
 # 	@echo 'Creating quotable database...'
 # 	sudo -u postgres psql

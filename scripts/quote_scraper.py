@@ -1,5 +1,6 @@
 import requests, re, sys, json, time
 from bs4 import BeautifulSoup as bs
+from pathlib import Path
 
 
 HEADERS = {'User-Agent': 'Mozilla/4.0 (iPad; CPU OS 12_1 like Mac OS X) AppleWebKit/603.1.15 (KHTML, like Gecko) Mobile/15E148'}
@@ -59,10 +60,12 @@ class QuoteScraper:
     
 if __name__ == "__main__":
     num_quotes = int(input("Please enter the number of quotes to scrape: "))
-    with open('quotes.json', 'w') as f:
+    Path("./scripts/data").mkdir(exist_ok=True)
+    file = "./scripts/data/quotes.txt"
+    with open(file, 'w') as f:
 
         scraper = QuoteScraper(output_file=f)
         for i in range(num_quotes):
             scraper.output_next_quote()
-        
+        print(f"Scraping complete results have been saved to {file}")
         f.close()

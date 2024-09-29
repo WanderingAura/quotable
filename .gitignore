@@ -2,3 +2,4 @@
 bin/
 logs/
 .venv/
+scripts/data

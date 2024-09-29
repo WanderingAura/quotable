@@ -110,7 +110,7 @@ func main() {
 
 	db, err := openDB(config)
 	if err != nil {
-		logger.Fatal().Stack().Err(err).Msg("")
+		logger.Fatal().Stack().Err(err).Msg("db connection failed")
 	}
 	logger.Info().Msg("database connection successful!")
 
