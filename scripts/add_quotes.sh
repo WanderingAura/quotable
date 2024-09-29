@@ -1,5 +1,4 @@
 #!/bin/bash
-set -x #echo on
 
 # path to the file containing quotes in json form
 FILE="./scripts/data/quotes.txt"
