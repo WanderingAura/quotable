@@ -20,6 +20,7 @@ func (app *application) routes() http.Handler {
 	router.HandlerFunc(http.MethodPost, "/v1/tokens/auth", app.createAuthenticationTokenHandler)
 	router.HandlerFunc(http.MethodPost, "/v1/user/register", app.registerUserHandler)
 	router.HandlerFunc(http.MethodGet, "/v1/quotes/:quote_id", app.getQuoteHandler)
+	router.HandlerFunc(http.MethodDelete, "/v1/quotes/:quote_id", app.requireAuthenticatedUser(app.deleteQuotesHandler))
 	router.HandlerFunc(http.MethodPost, "/v1/quotes/:quote_id/like", app.requireAuthenticatedUser(app.LikeQuoteHandler))
 	router.HandlerFunc(http.MethodPost, "/v1/quotes", app.requireAuthenticatedUser(app.createQuoteHandler))
 	router.HandlerFunc(http.MethodGet, "/v1/users/:user_id/quotes", app.requireAuthenticatedUser(app.listUserQuotesHandler))
