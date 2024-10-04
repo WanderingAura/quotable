@@ -71,7 +71,7 @@ func main() {
 	flag.StringVar(&config.logPath, "log-path", "./logs/quotable.log", "File to write error logs in")
 
 	// database configs
-	flag.StringVar(&config.db.dsn, "db-dsn", "", "Postgres database source name")
+	flag.StringVar(&config.db.dsn, "db-dsn", os.Getenv("QUOTABLE_DB_DSN"), "Postgres database source name")
 	flag.IntVar(&config.db.maxOpenConnections, "db-max-open-conns", 25, "Postgres max open connections")
 	flag.IntVar(&config.db.maxIdleConnections, "db-max-idle-conns", 25, "Postgres max idle connections")
 	flag.StringVar(&config.db.maxIdleDuration, "db-max-idle-time", "15m", "Postgres max connection idle time")
@@ -89,10 +89,6 @@ func main() {
 		fmt.Printf("Version:\t%s\n", version)
 		fmt.Printf("Build time:\t%s\n", buildTime)
 		os.Exit(0)
-	}
-
-	if config.db.dsn == "" {
-		config.db.dsn = os.Getenv("QUOTABLE_DSN")
 	}
 
 	logFile := os.Stderr
