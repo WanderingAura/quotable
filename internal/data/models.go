@@ -24,5 +24,6 @@ func New(db *sql.DB) Models {
 		Users:       UserDatabaseModel{DB: db},
 		Tokens:      TokenDatabaseModel{DB: db},
 		Permissions: PermissionDatabaseModel{DB: db},
+		Like:        LikesDatabaseModel{DB: db},
 	}
 }
