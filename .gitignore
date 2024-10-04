@@ -3,3 +3,4 @@ bin/
 logs/
 .venv/
 scripts/data
+design_specs.md
