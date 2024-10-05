@@ -1,9 +1,9 @@
-{{define "subject"}}Welcome to Greenlight!{{end}}
+{{define "subject"}}Welcome to Quotable!{{end}}
 
 {{define "plainBody"}}
-Hi,
+Dear {{.username}},
 
-Thanks for signing up for a Greenlight account. We're excited to have you on board!
+Thank you for joining Quotable, where the world's most inspiring words are at your fingertips! We're excited to have you as part of our community.
 
 For future reference, your user ID number is {{.userID}}
 
@@ -11,11 +11,12 @@ Please send a request to the `PUT /v1/users/activated` endpoint with the followi
 
 {"token": "{{.activationToken}}"}
 
-Please not that this is a one-time use token and it will expire in 3 days.
+Please note that this is a one-time use token and it will expire in 3 days.
 
-Thanks,
+If you did not sign up for Quotable, please disregard this email.
 
-The Greenlight Team
+Thank you,
+Yangyang Wang
 {{end}}
 
 {{define "htmlBody"}}
@@ -26,16 +27,17 @@ The Greenlight Team
     <meta http-equiv="Content-Type" content="text/html">
 </head>
 <body>
-    <p>Hi,</p>
-    <p>Thanks for signing up for a Greenlight account. We're excited to have you on board!</p>
+    <p>Dear {{.username}},</p>
+    <p>Thank you for joining Quotable, where the world's most inspiring words are at your fingertips! We're excited to have you as part of our community.</p>
     <p>For future reference, your user ID number is {{.userID}}</p>    
     <p>Please send a request to the `PUT /v1/users/activated` endpoint with the following JSON body to activate your account:</p>
     <pre><code>
         <p>{"token": "{{.activationToken}}"}</p>
     </code></pre>
-    <p>Please not that this is a one-time use token and it will expire in 3 days.</p>
+    <p>Please note that this is a one-time use token and it will expire in 3 days.</p>
+    <p>If you did not sign up for Quotable, please disregard this email.</p>
     <p>Thanks,</p>
-    <p>The Greenlight Team</p>
+    <p>Yangyang Wang</p>
 </body>
 </html>
 {{end}}

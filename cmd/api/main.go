@@ -81,6 +81,13 @@ func main() {
 	flag.IntVar(&config.limiter.burst, "limiter-burst", 4, "Rate limiter maximum burst")
 	flag.BoolVar(&config.limiter.enabled, "limiter-enable", true, "Enable rate limiter")
 
+	// mailer config
+	flag.StringVar(&config.smtp.host, "smtp-host", "sandbox.smtp.mailtrap.io", "SMTP host")
+	flag.IntVar(&config.smtp.port, "smtp-port", 587, "SMTP port")
+	flag.StringVar(&config.smtp.username, "smtp-username", os.Getenv("QUOTABLE_SMTP_USERNAME"), "SMTP username")
+	flag.StringVar(&config.smtp.password, "smtp-password", os.Getenv("QUOTABLE_SMTP_PASSWORD"), "SMTP password")
+	flag.StringVar(&config.smtp.sender, "smtp-sender", "Quotable <no-reply@quotable.net>", "SMTP sender")
+
 	displayVersion := flag.Bool("version", false, "Display version and exit")
 
 	flag.Parse()
